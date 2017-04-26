@@ -34,29 +34,34 @@ def lirePDB(a,b):
 	atome = dict()
 	atmWeight = lireAtoms(b)
 	#######################
-	conf=""
+	conf=''
 
 	with open(a, "r") as fichier:
 		fic = fichier.readlines()
 		for l in fic:
 			
-			if (conf=="" and l[0:4]=="ATOM"):
+			if (conf=='' and l[0:6].strip()=='ATOM'):
 				conf=l[16]
+				print("IN:"+'\''+conf+'\''+"\t"+'\''+l[0:6].strip()+'\'')
+			else:
+				if(conf!=' '): print("conf1")
+				if(l[0:6].strip() == "ATOM"): print("conf2:"+'\''+l[0:6].strip()+'\'')
+				print('\''+conf+'\''+"\t"+'\''+l[0:6].strip()+'\'')
 				
 			if (l[0:4]=="ATOM" and l[16]==conf): #Scan des chaines d'interet
 				##### Recuperation des donnees ###
-				res=l[24:31].strip()
+				res=l[17:20].strip()
 				nomAtome = l[13:16].strip()
-				chName=l[20:23].strip()
+				chName=l[21].strip()
 				
-				info={'ID': (float)(l[9:12].strip()),
-						'x'	: (float)(l[32:39].strip()),
-						'y' : (float)(l[40:47].strip()),
-						'z' : (float)(l[48:55].strip()),
+				info={'ID': (l[7:11].strip()),
+						'x'	: (float)(l[31:38].strip()),
+						'y' : (float)(l[39:46].strip()),
+						'z' : (float)(l[47:54].strip()),
 						'atmW': atmWeight[l[77].strip()]
 					}
 				######## Fin recuperation ########
-				
+				#~ print(res)
 				 # Chaine non repertoriee donc on l'ajoute
 				if (chName not in chaine.keys()):
 					chaine[chName] = {}
@@ -104,7 +109,7 @@ def distanceAtomes(a,b):
 	z2 = b['z']
 	
 	distance= math.sqrt(pow(x1-x2,2)+pow(y1-y2,2)+pow(z1-z2,2))
-	return
+	return distance
 
 ## Calcule les distances residu-residu
 # @a: dictionnaire issu de la fonction ajouterCentreDeMasse(a) 
@@ -122,15 +127,8 @@ def distance(a):
 			
 				if j!=l:
 					if str(l) not in mat.keys() or str(j) not in mat[str(l)].keys():
-						x1 = a[i][j]['cdm']['x']
-						y1 = a[i][j]['cdm']['y']
-						z1 = a[i][j]['cdm']['z']
 						
-						x2 = a[i][l]['cdm']['x']
-						y2 = a[i][l]['cdm']['y']
-						z2 = a[i][l]['cdm']['z']
-						
-						distance= math.sqrt(pow(x1-x2,2)+pow(y1-y2,2)+pow(z1-z2,2))
+						distance=distanceAtomes(a[i][j]['cdm'],a[i][l]['cdm'])
 						mat[str(j)][str(l)]={'val':distance}
 							
 	return mat
@@ -170,20 +168,41 @@ def createPDB(a):
 				print(formateMot("ATOM", 6)+str(i)+str(a[i][j]['ID']))
 				# A compléter
 
-
+## Prend en entrée deux dictionnaires de protéines et calcule la distance entre chaque atome à la même position
 def rmsd(a,b):
-	N = int(); #Admettons qu'on possède déja N
-	for i in range(N):
-		print("test"+i)
-
+	N = 0
+	s=0.0
+	for j in a.keys():# dans les chaines
+		for k in a[j].keys(): # dans les résidus
+			for l in a[j][k].keys(): #dans les dictionnaires d'info
+				print("a:"+str(a[j][k][l]) +"\n"+ "b:"+str(b[j][k][l]))
+				print(pow(distanceAtomes(a[j][k][l],b[j][k][l]),2))
+				s+=pow(distanceAtomes(a[j][k][l],b[j][k][l]),2)
+				N+=1
+	print("n: "+str(N))
+	return math.sqrt(s/N)
 
 
 if __name__ == '__main__':
 	monDico = dict()
-	monDico = lirePDB(sys.argv[1],sys.argv[2])
+	ficAtome=sys.argv[1]
+	prot1 =sys.argv[2]
+	prot2 =sys.argv[3]
 	
-	ajouterCentreDeMasse(monDico)
+	dicoProt1 = lirePDB(prot1,ficAtome)
+	#~ dicoProt2 = lirePDB(prot2,ficAtome)
 	
-	mat = distance(monDico)
-	printDistance(mat)
+	print(dicoProt1)
+	#Calculer rmsd en premier car on modifie le dictionnaire après
+	#~ print(rmsd(dicoProt1,dicoProt2))
+	
+	#~ ajouterCentreDeMasse(dicoProt1)
+	#~ ajouterCentreDeMasse(dicoProt2)
+	
+	
+
+	
+	
+	#~ mat = distance(monDico)
+	#~ printDistance(mat)
 
