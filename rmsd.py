@@ -26,10 +26,10 @@ import math
 import structureTools_TaylorVingadassalon as st
 
 
-## Prend en entrée deux dictionnaires de protéines et calcule la distance entre chaque atome à la même position
+## Prend en entrée deux dictionnaires de protéines et calcule le rmsd entre ces deux protéines
 def rmsd(a,b,liste=['CA']): #Atome par défaut CA
 	N = 0
-	res =0
+	res = 0
 	s=0.0
 	for j in a.keys():# dans les chaines
 		for k in a[j].keys(): # dans les résidus
@@ -40,8 +40,31 @@ def rmsd(a,b,liste=['CA']): #Atome par défaut CA
 					N+=1
 	print("Paires d'atomes alignées : ",N)
 	print("Nombre résidus: ",res)
-	print("RMSD: ",math.sqrt(s/N))
-		
+	return(math.sqrt(s/N))
+
+
+## Prend en entrée deux dictionnaires de protéines et calcule le rmsd entre chaque résidus des protéines 
+## (sortie : colonne 1 position du résidus; colonne 2: RMDS entre les deux conf)
+def res_rmsd(a,b,liste=['CA']): #Atome par défaut CA
+	N = 0
+	res = 0
+	s=0.0
+	for j in a.keys():# dans les chaines
+		for k in a[j].keys(): # dans les résidus
+			res+=1
+			for l in a[j][k].keys(): #dans les dictionnaires d'info
+				
+				#~ if(l in liste): #On ignore le centre de masse s'il y en a un
+					#~ s+=pow(st.distanceAtomes(a[j][k][l],b[j][k][l]),2)
+					#~ N+=1
+	print("Paires d'atomes alignées : ",N)
+	print("Nombre résidus: ",res)
+	return(math.sqrt(s/N))	
+
+## Fonction qui permettra d'afficher le graphique RMDS vs AA positions (pas de dictionnaire en entrée car temporalité importante) (liste probablement)
+def drawRMDS(a):
+	print("Je dessine")
+	#A compléter cf séance 8 partie 4
 
 def usage():
 	print("Problème lors de l'appel de la fonction rmsd: ")
@@ -60,5 +83,5 @@ if __name__ == '__main__':
 	dicoProt2 = st.lirePDB(prot2,ficAtome)
 	
 	#Calculer rmsd 
-	rmsd(dicoProt1,dicoProt2,['CA','N','O'])
+	print(rmsd(dicoProt1,dicoProt2,['CA','N','O']))
 	
