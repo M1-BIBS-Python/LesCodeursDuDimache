@@ -11,7 +11,7 @@ import structureTools_TaylorArnaud as st
 
 
 ## Prend en entrée deux dictionnaires de protéines et calcule le rmsd entre ces deux protéines
-def rmsd(a,b,liste=['CA']): #Atome par défaut CA
+def simple_rmsd(a,b,liste=['CA']): #Atome par défaut CA
 	N = 0
 	res = 0
 	s=0.0
@@ -25,6 +25,24 @@ def rmsd(a,b,liste=['CA']): #Atome par défaut CA
 						N+=1
 	print("Paires d'atomes alignées : ",N)
 	print("Nombre résidus: ",res)
+	if(N>0):
+		return(math.sqrt(s/N))
+	#Sinon aucune paire n'a été alignée : retourne None (car division par 0 impossible)
+
+## Prend en entrée deux dictionnaires de protéines et calcule le rmsd entre ces deux protéines
+def rmsd(a,b,modA,modB,liste=['CA']): #Atome par défaut CA
+	N = 0
+	res = 0
+	s=0.0
+	for j in a[modA].keys():# dans les chaines
+		for k in a[modA][j].keys(): # dans les résidus
+			res+=1
+			for l in a[modA][j][k].keys(): #dans les dictionnaires d'info
+				if(l in liste): #On ignore le centre de masse s'il y en a un
+					s+=pow(st.distanceAtomes(a[modA][j][k][l],b[modB][j][k][l]),2) # On peut écrire ça car même protéine, même chaine/résidus/atomes seul le modèle change
+					N+=1
+	#~ print("Paires d'atomes alignées : ",N)
+	#~ print("Nombre résidus: ",res)
 	if(N>0):
 		return(math.sqrt(s/N))
 	#Sinon aucune paire n'a été alignée : retourne None (car division par 0 impossible)
@@ -51,26 +69,43 @@ def res_rmsd(a,b,liste=['CA']): #Atome par défaut CA
 				if(N>0):
 					dicoRmsd[float(k)]=float(math.sqrt(s/N)) #Sauvegarde du RMSD du résidu k
 			
-	print("Paires d'atomes alignées : ",N)
 	print("Nombre résidus: ",nbRes)
 	return(dicoRmsd)	
 
 ## Fonction qui permettra d'afficher le graphique RMDS vs AA positions (pas de dictionnaire en entrée car temporalité importante) (liste probablement)
-def drawRMDS(a):
+def drawRMDS(dic,lType='-'):
 	listCle =list()
 	listVal =list()
-	for a in dicTest.keys():
+	for a in dic.keys():
 		listCle.append(a)
-		listVal.append(dicTest[a])
+		listVal.append(dic[a])
 	
 	print("Je dessine")
-	plt.plot(listCle,listVal)
+	plt.plot(listCle,listVal,lType)
 	plt.ylabel('RMSD(A)')
 	plt.xlabel('aa positions')
 	print("Dessin terminé !")
 	plt.show()
 	#A compléter cf séance 8 partie 4
 
+def drawBarChart(dic):
+	listCle =list()
+	listVal =list()
+
+
+	for a in dic.keys():
+		listCle.append(a)
+		listVal.append(dic[a])
+	
+	print("Je dessine")
+	plt.bar(listCle,listVal)
+	plt.ylabel('RMSD(A)')
+	plt.xlabel('Modèle')
+	print("Dessin terminé !")
+	plt.show()
+	
+	
+	
 def usage():
 	print("Problème lors de l'appel de la fonction rmsd: ")
 
@@ -99,8 +134,5 @@ if __name__ == '__main__':
 	
 	#Calculer rmsd 
 	dicTest = res_rmsd(dicoProt1,dicoProt2)
-		
-	print(dicTest.keys())
-	print(dicTest.values())
 	print(len(dicTest))
 	drawRMDS(dicTest)
