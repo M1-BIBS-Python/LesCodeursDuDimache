@@ -7,7 +7,9 @@ import math
 ## Retourne le dictionnaire atome-masse moleculaire
 # @a : chemin du fichier de donnees atome-masse moleculaire
 def lireAtoms(a):
-
+	if(a==None):
+		print("Pour utiliser les masses atomiques, vous devez fournir le fichier atomes.txt")
+		return None
 	atome = dict()
 	##########################
 	# Chargement dico atomes #
@@ -42,13 +44,18 @@ def lirePDB(a):
 			if l[0:6].strip()=='MODEL' and l[9:14].strip() not in chaine.keys():
 				model = l[9:14].strip()
 				
+			## Si la molécule est une molécule d'eau ou fait partie du milieu, on ne fait rien
+			# Dans l'idéal il serait bien d'avoir un tableau des acides aminés possibles comme ça on supprime pas directement TIP, CLA et POT
+			if(l[17:20]=='TIP' or l[17:20]=='CLA' or l[17:20]=='POT'):
+				continue
+			
 			#Pour 1 modèle donné, on lit une seule configuration (s'il y en a plusieurs)
 			if (conf==False and l[0:6].strip()=='ATOM'): #Pour la première ligne du fichier, l'ascii du char[0]=65279 parfois indique le début d'une zone de texte
 				conf=l[16]
 				
 			if (l[0:4]=="ATOM" and l[16]==conf): #Scan des chaines d'interet
 				##### Recuperation des donnees ###
-				res=l[22:26].strip()
+				res=l[22:26].strip() # Residue sequence number
 				nomAtome = l[12:16].strip()
 				chName=l[22].strip()
 
@@ -75,12 +82,15 @@ def lirePDB(a):
 
 	return chaine
 
-# 
+# Converti l'atomeName en nom de l'élément correspondant
 def selectElement(atomeName):
 	atomeName=atomeName.strip()
-	courant = ['C','H','O','N','P']
+	courant = ['C','H','O','N','P','S']
+	other = ['ZN', 'FE']
 	if atomeName[0] in courant:
 		return atomeName[0]
+	elif atomeName[0:2] in other:
+		return atomeName[0:2]
 	else:
 		print("Un atome non répertorié utilisé !")
 	
@@ -88,10 +98,15 @@ def selectElement(atomeName):
 #Ajoute au dictionnaire info (pour chaque atome) la masse de l'atome 'atmW'
 def addAtomWeight(pathAtomes, dicoPDB):
 	masseAtomes = lireAtoms(pathAtomes)
+	if(masseAtomes==None):
+		return None
 	for model in dicoPDB.keys():			
 		for chaine in dicoPDB[model].keys():
 			for residu in dicoPDB[model][chaine].keys():
 				for atome in dicoPDB[model][chaine][residu].keys():
+					#Si l'utilisateur a rajouté un centre de masse on ne fait rien
+					if atome == 'cdm':
+						continue
 					elem = selectElement(atome)
 					# Si on a réussi a récupérer le nom de l'atome, on associé une masse à partir du dico atome.txt
 					if(elem == None): # Si un atome non répertorié est trouvé on l'affiche
@@ -106,12 +121,11 @@ def ajouterCentreDeMasse(a):
 	for mod in a.keys():
 		for i in a[mod].keys():			# On parcours la chaine
 			for j in a[mod][i].keys():	# On parcours les residus
-				
 				cdm = {'x':0,'y':0,'z':0}
 				masseTotale=0
 				for k in a[mod][i][j].keys(): # Extraction des infos pour chaque atome
 					## Si la masse atomique est disponible, on fait un calcul plus précis
-					if a[mod][i][j][k]['atmW'].exists:
+					if('atmW' in a[mod][i][j][k]):
 						atmW = a[mod][i][j][k]['atmW']
 					else: # Sinon on considère que tous les atomes ont une masse atomique de 1
 						atmW = 1
@@ -157,7 +171,6 @@ def distance(a):
 				
 					if j!=l:
 						if str(l) not in mat.keys() or str(j) not in mat[str(l)].keys():
-							
 							dist=distanceAtomes(a[mod][i][j]['cdm'],a[mod][i][l]['cdm'])
 							mat[str(j)][str(l)]={'val':dist}
 							
@@ -186,38 +199,59 @@ def formateMot(a,i):
 	
 	return mot 
 		
-
+## Ok ça marche mais la sortie n'est pas encore formatée !
 def createPDB(a):
 	with open("PDB_out.PDB", "w") as fout:
 		for mod in a.keys():
-			fout.write("MODEL",repeat(" ",5),mod)
-			for i in a[mod].keys():
-				for j in a[mod][i].keys():
-					fout.write(formateMot("ATOM", 6)+str(i)+str(a[mod][i][j]['ID']))
+			fout.write(str("MODEL"+repeat(" ",5)+mod+"\n"))
+			for i in a[mod].keys(): # clés des chaines
+				for j in a[mod][i].keys(): # clés des résidus
+					
+					for d in a[mod][i][j].keys(): # Clés des dicoInfo (l'ID est un élément d'info
+						#~ print ("[",mod,"]","[",i,"]","[",j,"]","[",d,"]")
+						#~ print(a[mod][i][j][d])
+						if(d!='cdm'): # S'il ne s'agit pas du centre de masse
+							textLine = formateMot("ATOM", 6)+str(i)+str(a[mod][i][j][d]['ID'])+"\n"
+							fout.write(textLine)
 					
 
 if __name__ == '__main__':
 	monDico = dict()
-	ficAtome=sys.argv[3]
-	prot1 =sys.argv[1]
-	prot2 =sys.argv[2]
 	
-	#~ dicoProt1 = lirePDB(prot1)
+	if (len(sys.argv) == 4):
+		prot1 =sys.argv[1]
+		prot2 =sys.argv[2]
+		ficAtome=sys.argv[3]
+		print("Fichier ",ficAtome," fourni comme fichier d'atomes !")
+	elif (len(sys.argv)== 3):
+		prot1 =sys.argv[1]
+		prot2 =sys.argv[2]
+		print("Default mode !")
+	else:
+		print("Le format d'entrée attendu est : structureTools_TaylorArnaud.py fichier_1.PDB fichier_2.PDB [atomes.txt]")
+		exit()
+	
+	dicoProt1 = lirePDB(prot1)
 	dicoProt2 = lirePDB(prot2)
 	
-	#~ ajouterCentreDeMasse(dicoProt1)
-	#~ ajouterCentreDeMasse(dicoProt2)
-
-	#~ addAtomWeight(ficAtome,dicoProt2)
-	
-	#~ print(getConfigs(prot1))
-	#~ print(getConfigs(prot2))
-	#~ print(dicoProt1.keys())
-	#~ mat = distance(monDico)
 	#~ print(dicoProt1)
 	#~ print(dicoProt2)
 	
+	addAtomWeight(ficAtome,dicoProt1)
+	addAtomWeight(ficAtome,dicoProt2)
 	
-	#useless code
-	#~ if nomAtome =='ZN':
-		#~ print("Trouvé:",info['ID'])
+	ajouterCentreDeMasse(dicoProt1)
+	ajouterCentreDeMasse(dicoProt2)
+	
+	
+	#~ print(dicoProt2)
+	
+	createPDB(dicoProt1)
+	
+	
+	mat = distance(monDico)
+	printDistance(mat)
+	
+	
+
+
