@@ -21,7 +21,6 @@ def lireAtoms(a):
 			atome[line[0]]=(float)(line[1])
 	return atome
 				
-
 ## Retourne le dictionnaire correspondant au fichier PDB lu
 # @a : chemin du fichier PDB
 def lirePDB(a):
@@ -84,7 +83,8 @@ def lirePDB(a):
 
 	return chaine
 
-# Converti l'atomeName en nom de l'élément correspondant
+## Converti l'atomeName en nom de l'élément correspondant
+# @atomeName : nom de l'atome extrait du pdb
 def selectElement(atomeName):
 	atomeName=atomeName.strip()
 	courant = ['C','H','O','N','P','S']
@@ -95,9 +95,10 @@ def selectElement(atomeName):
 		return atomeName[0:2]
 	else:
 		print("Un atome non répertorié utilisé !")
-	
-	
-#Ajoute au dictionnaire info (pour chaque atome) la masse de l'atome 'atmW'
+		
+##Ajoute au dictionnaire info (pour chaque atome) la masse de l'atome 'atmW'
+# @pathAtomes : 
+# @dicoPDB :
 def addAtomWeight(pathAtomes, dicoPDB):
 	masseAtomes = lireAtoms(pathAtomes)
 	if(masseAtomes==None):
@@ -115,7 +116,6 @@ def addAtomWeight(pathAtomes, dicoPDB):
 						print(chaine,'	',residu,"	","\'",atome,"\'","	",elem)
 					else: # Le nom de l'élément a été récupéré, on ajoute sa masse
 						dicoPDB[model][chaine][residu][atome]['atmW']=masseAtomes[elem]
-	
 	
 ## Ajoute pour chaque residu du dictionnaire b la position (x,y,z) de son centre de masse
 # @a: dictionnaire issu de la commande lirePDB
@@ -178,7 +178,6 @@ def distance(a):
 							
 	return mat
 
-
 ## Affiche proprement les distances residu-redisu
 # @a: dictionnaire issu de la fonction distance(a)
 def printDistance(a):
@@ -187,12 +186,19 @@ def printDistance(a):
 			for j in a[mod][i].keys():
 				print("["+i+"]["+j+"] = "+str(a[mod][i][j]['val']))
 
+## Retourne le motif "a" repeter "b" fois
+# @a : motif à repeter
+# @b : nombre d'occurence du motif "a" souhaiter 
 def repeat(a,b):
 	mot = str()
 	for i in range(0,b):
 		mot+=str(a)
 	return mot
 
+## retourne le mot "a" compléter avec des espaces pour atteindre "i" caractère
+# @a : mot à formater
+# @i : nombre de caractere souhaiter
+# @alignement : détermine l'ajout des espaces, de base "R" à droite du mot, sinon "L" pour ajouter à gauche du mot
 def formateMot(a,i,alignement="R"):
 	nbEspace=i-len(str(a))
 	mot=str()
@@ -231,9 +237,7 @@ def createPDB(a):
 									formateMot(a[mod][i][j][d]['dom'],5)+"\n")
 						
 						fout.write(textLine)
-						
-					
-
+											
 ## Retourne la liste des fichiers comportant le motif recherché
 # @a : chemin du dossier comportant les fichiers d'intérêt
 # @b : motif voulu, ici le nom du domaine 
@@ -243,8 +247,6 @@ def lecture_dossier(a,b):
 	ref=glob.glob(path_ref) # crée une liste des fichiers contenues dans le dossier ref contenant le motif b dans leur nom
 	frame=glob.glob(path_frame)
 	return([ref,frame])
-
-
 
 if __name__ == '__main__':
 	monDico = dict()
