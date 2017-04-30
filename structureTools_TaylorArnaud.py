@@ -58,12 +58,12 @@ def lirePDB(a):
 				res=int(l[22:26].strip()) # Residue sequence number
 				nomAtome = l[12:16].strip()
 				chName=l[22].strip()
-
+				dom = l[72:76].strip()
+				
 				info={'ID': (l[6:11].strip()),
 						'x'	: (float)(l[30:38].strip()),
 						'y' : (float)(l[38:46].strip()),
 						'z' : (float)(l[46:54].strip()),
-						'dom': l[72:76].strip(), # Ajoute complexité mémoire (+180Mo sur le gros jeu de données) Mais plus rapide
 					}
 				######## Fin recuperation ########
 				
@@ -71,15 +71,19 @@ def lirePDB(a):
 				if(model not in chaine.keys()):
 					chaine[model] = {}
 				
+				# Si domaine non répertorié
+				if(dom not in chaine[model].keys()):
+					chaine[model][dom] = {}
+				
 				# Chaine non repertoriee donc on l'ajoute
-				if (chName not in chaine[model].keys()):
-					chaine[model][chName] = {}
+				if (chName not in chaine[model][dom].keys()):
+					chaine[model][dom][chName] = {}
 				
 				## Residu non encore repertorie
-				if(res not in chaine[model][chName].keys()):
-					chaine[model][chName][res]={}
+				if(res not in chaine[model][dom][chName].keys()):
+					chaine[model][dom][chName][res]={}
 				
-				chaine[model][chName][res][nomAtome]=info
+				chaine[model][dom][chName][res][nomAtome]=info
 
 	return chaine
 
@@ -103,46 +107,48 @@ def addAtomWeight(pathAtomes, dicoPDB):
 	masseAtomes = lireAtoms(pathAtomes)
 	if(masseAtomes==None):
 		return None
-	for model in dicoPDB.keys():			
-		for chaine in dicoPDB[model].keys():
-			for residu in dicoPDB[model][chaine].keys():
-				for atome in dicoPDB[model][chaine][residu].keys():
-					#Si l'utilisateur a rajouté un centre de masse on ne fait rien
-					if atome == 'cdm':
-						continue
-					elem = selectElement(atome)
-					# Si on a réussi a récupérer le nom de l'atome, on associé une masse à partir du dico atome.txt
-					if(elem == None): # Si un atome non répertorié est trouvé on l'affiche
-						print(chaine,'	',residu,"	","\'",atome,"\'","	",elem)
-					else: # Le nom de l'élément a été récupéré, on ajoute sa masse
-						dicoPDB[model][chaine][residu][atome]['atmW']=masseAtomes[elem]
-	
+	for model in dicoPDB.keys():
+		for dom in dicoPDB[model].keys():		
+			for chaine in dicoPDB[model][dom].keys():
+				for residu in dicoPDB[model][dom][chaine].keys():
+					for atome in dicoPDB[model][dom][chaine][residu].keys():
+						#Si l'utilisateur a rajouté un centre de masse on ne fait rien
+						if atome == 'cdm':
+							continue
+						elem = selectElement(atome)
+						# Si on a réussi a récupérer le nom de l'atome, on associé une masse à partir du dico atome.txt
+						if(elem == None): # Si un atome non répertorié est trouvé on l'affiche
+							print(chaine,'	',residu,"	","\'",atome,"\'","	",elem)
+						else: # Le nom de l'élément a été récupéré, on ajoute sa masse
+							dicoPDB[model][dom][chaine][residu][atome]['atmW']=masseAtomes[elem]
+		
 ## Ajoute pour chaque residu du dictionnaire b la position (x,y,z) de son centre de masse
 # @a: dictionnaire issu de la commande lirePDB
 def ajouterCentreDeMasse(a):
 	for mod in a.keys():
-		for i in a[mod].keys():			# On parcours la chaine
-			for j in a[mod][i].keys():	# On parcours les residus
-				cdm = {'x':0,'y':0,'z':0}
-				masseTotale=0
-				for k in a[mod][i][j].keys(): # Extraction des infos pour chaque atome
-					## Si la masse atomique est disponible, on fait un calcul plus précis
-					if('atmW' in a[mod][i][j][k]):
-						atmW = a[mod][i][j][k]['atmW']
-					else: # Sinon on considère que tous les atomes ont une masse atomique de 1
-						atmW = 1
+		for dom in a[mod].keys():
+			for i in a[mod][dom].keys():			# On parcours la chaine
+				for j in a[mod][dom][i].keys():	# On parcours les residus
+					cdm = {'x':0,'y':0,'z':0}
+					masseTotale=0
+					for k in a[mod][dom][i][j].keys(): # Extraction des infos pour chaque atome
+						## Si la masse atomique est disponible, on fait un calcul plus précis
+						if('atmW' in a[mod][dom][i][j][k]):
+							atmW = a[mod][dom][i][j][k]['atmW']
+						else: # Sinon on considère que tous les atomes ont une masse atomique de 1
+							atmW = 1
+							
+						cdm['x']+=atmW*a[mod][dom][i][j][k]['x']
+						cdm['y']+=atmW*a[mod][dom][i][j][k]['y']
+						cdm['z']+=atmW*a[mod][dom][i][j][k]['z']
 						
-					cdm['x']+=atmW*a[mod][i][j][k]['x']
-					cdm['y']+=atmW*a[mod][i][j][k]['y']
-					cdm['z']+=atmW*a[mod][i][j][k]['z']
+						masseTotale+=atmW
+						
+					cdm['x']/=masseTotale
+					cdm['y']/=masseTotale
+					cdm['z']/=masseTotale
 					
-					masseTotale+=atmW
-					
-				cdm['x']/=masseTotale
-				cdm['y']/=masseTotale
-				cdm['z']/=masseTotale
-				
-				a[mod][i][j]['cdm']=cdm
+					a[mod][dom][i][j]['cdm']=cdm
 
 ## prend en entrée deux atomes (donc les dico d'info des deux atomes) (x,y,z) et retourne la distance entre eux
 def distanceAtomes(a,b):
@@ -162,29 +168,31 @@ def distanceAtomes(a,b):
 def distance(a):
 	mat = dict()
 	for mod in a.keys():
-		for i in a[mod].keys(): #Chaines i
-			for j in a[mod][i].keys(): # Resisud	j
-				
-				if str(j) not in mat.keys():
-					mat[str(j)]={}
-				
-				#~ for k in a.keys(): # Chaine k
-				for l in a[mod][i].keys(): #residu l
-				
-					if j!=l:
-						if str(l) not in mat.keys() or str(j) not in mat[str(l)].keys():
-							dist=distanceAtomes(a[mod][i][j]['cdm'],a[mod][i][l]['cdm'])
-							mat[str(j)][str(l)]={'val':dist}
-							
+		for dom in a[mod].keys():
+			for i in a[mod][dom].keys(): #Chaines i
+				for j in a[mod][dom][i].keys(): # Resisud	j
+					
+					if str(j) not in mat.keys():
+						mat[str(j)]={}
+					
+					#~ for k in a.keys(): # Chaine k
+					for l in a[mod][dom][i].keys(): #residu l
+					
+						if j!=l:
+							if str(l) not in mat.keys() or str(j) not in mat[str(l)].keys():
+								dist=distanceAtomes(a[mod][dom][i][j]['cdm'],a[mod][dom][i][l]['cdm'])
+								mat[str(j)][str(l)]={'val':dist}
+								
 	return mat
 
 ## Affiche proprement les distances residu-redisu
 # @a: dictionnaire issu de la fonction distance(a)
 def printDistance(a):
 	for mod in a.keys():
-		for i in a[mod].keys():
-			for j in a[mod][i].keys():
-				print("["+i+"]["+j+"] = "+str(a[mod][i][j]['val']))
+		for dom in a[mod].keys():
+			for i in a[mod][dom].keys():
+				for j in a[mod][dom][i].keys():
+					print("["+i+"]["+j+"] = "+str(a[mod][dom][i][j]['val']))
 
 ## Retourne le motif "a" repeter "b" fois
 # @a : motif à repeter
@@ -217,26 +225,29 @@ def createPDB(a):
 	with open("PDB_out.PDB", "w") as fout:
 		for mod in sorted(a.keys()): # Dans les modèles
 			fout.write(str("MODEL"+repeat(" ",5)+mod+"\n")) #On écrit le modèle qu'on est entrain de traiter
-			for i in sorted(a[mod].keys()): # clés des chaines: colonne 22
-				for j in sorted(a[mod][i].keys()): # clés des résidus : colonne 22-26
-					for d in sorted(a[mod][i][j].keys()): # Clés des dicoInfo (l'ID est un élément d'info) : colonne 12 à 16
-						#ID: colonne 6:11
-						#x : 30 à 38
-						#y : 38 à 46
-						#z : 46 à 54
-						#dom: 70 à 75
-						
-						#~ print ("[",mod,"]","[",i,"]","[",j,"]","[",d,"]")
-						#~ print(a[mod][i][j][d])
-						
-						#~ if(d!='cdm'): # S'il ne s'agit pas du centre de masse
-						
-						
-						textLine = (formateMot("ATOM", 6, alignement='L')+formateMot(str(a[mod][i][j][d]['ID']),5)+formateMot(d,4,alignement='L')+repeat(" ",6)+i+formateMot(j,4)+repeat(" ",4)+
-									formateMot(a[mod][i][j][d]['x'],8)+formateMot(a[mod][i][j][d]['y'],8)+formateMot(a[mod][i][j][d]['z'],8)+repeat(" ",16)+
-									formateMot(a[mod][i][j][d]['dom'],5)+"\n")
-						
-						fout.write(textLine)
+			for dom in sorted(a[mod].keys()):
+				for i in sorted(a[mod][dom].keys()): # clés des chaines: colonne 22
+					for j in sorted(a[mod][dom][i].keys()): # clés des résidus : colonne 22-26
+						for d in sorted(a[mod][dom][i][j].keys()): # Clés des dicoInfo (l'ID est un élément d'info) : colonne 12 à 16
+							#ID: colonne 6:11
+							#x : 30 à 38
+							#y : 38 à 46
+							#z : 46 à 54
+							#dom: 70 à 75
+							
+							print ("[",mod,"]","[",dom,"]","[",i,"]","[",j,"]","[",d,"]")
+							print(a[mod][dom][i][j][d])
+							
+							#~ if(d!='cdm'): # S'il ne s'agit pas du centre de masse
+							
+							
+							#~ textLine = (formateMot("ATOM", 6, alignement='L')+formateMot(str(a[mod][i][j][d]['ID']),5)+formateMot(d,4,alignement='L')+repeat(" ",6)+i+formateMot(j,4)+repeat(" ",4)+
+										#~ formateMot(a[mod][i][j][d]['x'],8)+formateMot(a[mod][i][j][d]['y'],8)+formateMot(a[mod][i][j][d]['z'],8)+repeat(" ",16)+
+										#~ formateMot(a[mod][i][j][d]['dom'],5)+"\n")
+							
+							#~ fout.write(textLine)
+
+
 											
 ## Retourne la liste des fichiers comportant le motif recherché
 # @a : chemin du dossier comportant les fichiers d'intérêt
