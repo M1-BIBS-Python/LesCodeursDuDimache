@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 #-*- coding : utf3 -*-
-import sys
+import os,sys
 import math
-import glob #gestion dossier et fichier
+import glob, shutil #gestion dossier et fichier
 
 
 ## Retourne le dictionnaire atome-masse moleculaire
@@ -221,12 +221,22 @@ def formateMot(a,i,alignement="R"):
 	
 	return mot 
 		
-## Ok ça marche mais la sortie n'est pas encore formatée !
-def createPDB(a,dossier=""):
+## Crée un fichier PDB par modèle et par domaine à partir d'un fichier pdb de base contenant (ou pas) plusieurs modèles et domaines
+# @a : dictionnaire contenant le fichier pdb de base 
+# @b : nom du dossier dans lequel stocker les fichiers créés
+def createPDB(a,dossier):
+	path = dossier+"/"
+	if(os.path.exists(path)):
+		print('Le dossier existe déjà. Il va être réécri !')
+		shutil.rmtree(path)
+		
+	print("Création du dossier:",dossier)
+	os.mkdir(path);
+
 	for mod in sorted(a.keys()): # Dans les modèles
 		for dom in sorted(a[mod].keys()):
 			#A chaque changement de domaine, le fichier d'écriture change
-			with open(str(dossier+"/"+dom+"_"+mod+".PDB"), "w") as fout:
+			with open(str(path)+str(dom)+"_"+str(mod)+".PDB","w") as fout:
 				for i in sorted(a[mod][dom].keys()): # clés des chaines: colonne 22
 					for j in sorted(a[mod][dom][i].keys()): # clés des résidus : colonne 22-26
 						#On ne trie pas sur les noms d'atomes
@@ -267,30 +277,16 @@ if __name__ == '__main__':
 		exit()
 	
 	dicoProt1 = lirePDB(prot1)
-	dicoProt2 = lirePDB(prot2)
-	print(dicoProt1)
-	#~ for mod in sorted(dicoProt1.keys()):
-		#~ for chaine in sorted(dicoProt1[mod].keys()):
-			#~ for residu in sorted(dicoProt1[mod][chaine].keys()): 
-				#~ # Normalement les résidus triés dans l'ordre des ID de résidus
-				#~ # On s'arrête à ce niveau de trie : car les domaines sont normalement triés aussi
-				#~ print(mod," ",chaine," ",residu," ",dicoProt1[mod][chaine][residu])
-				
-	
-	#~ print(dicoProt1)
-	#~ print(dicoProt2)
-	
+	dicoProt2 = lirePDB(prot2)				
+
 	#~ addAtomWeight(ficAtome,dicoProt1)
 	#~ addAtomWeight(ficAtome,dicoProt2)
 	
 	#~ ajouterCentreDeMasse(dicoProt1)
 	#~ ajouterCentreDeMasse(dicoProt2)
 	
-	
-	#~ print(dicoProt2)
-	
-	createPDB(dicoProt1)
-	
+	createPDB(dicoProt1,"Refs")
+	createPDB(dicoProt2,"Frames")
 	
 	#~ mat = distance(monDico)
 	#~ printDistance(mat)
