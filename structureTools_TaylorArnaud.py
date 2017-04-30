@@ -2,7 +2,7 @@
 #-*- coding : utf3 -*-
 import sys
 import math
-import glob #gestion dossieret fichier
+import glob #gestion dossier et fichier
 
 
 ## Retourne le dictionnaire atome-masse moleculaire
@@ -92,11 +92,12 @@ def lirePDB(a):
 def selectElement(atomeName):
 	atomeName=atomeName.strip()
 	courant = ['C','H','O','N','P','S']
-	other = ['ZN', 'FE']
-	if atomeName[0] in courant:
+	other = ['ZN', 'FE','CA']
+	if atomeName[0:2] in other:
+		return atomeName[0:2]	
+	elif atomeName[0] in courant:
 		return atomeName[0]
-	elif atomeName[0:2] in other:
-		return atomeName[0:2]
+	
 	else:
 		print("Un atome non répertorié utilisé !")
 		
