@@ -42,7 +42,7 @@ def lirePDB(a):
 			## Il faut rajouter une dimension au dictionnaire afin de prendre en compte la configuration de la protéine
 			#Si des modèles différents existent, on les sauvegardent
 			if l[0:6].strip()=='MODEL' and l[9:14].strip() not in chaine.keys():
-				model = l[9:14].strip()
+				model = int(l[9:14].strip())
 				
 			## Si la molécule est une molécule d'eau ou fait partie du milieu, on ne fait rien
 			# Dans l'idéal il serait bien d'avoir un tableau des acides aminés possibles comme ça on supprime pas directement TIP, CLA et POT
@@ -55,7 +55,7 @@ def lirePDB(a):
 				
 			if (l[0:4]=="ATOM" and l[16]==conf): #Scan des chaines d'interet
 				##### Recuperation des donnees ###
-				res=l[22:26].strip() # Residue sequence number
+				res=int(l[22:26].strip()) # Residue sequence number
 				nomAtome = l[12:16].strip()
 				chName=l[22].strip()
 
@@ -63,6 +63,7 @@ def lirePDB(a):
 						'x'	: (float)(l[30:38].strip()),
 						'y' : (float)(l[38:46].strip()),
 						'z' : (float)(l[46:54].strip()),
+						'dom': l[72:76].strip(), # Ajoute complexité mémoire (+180Mo sur le gros jeu de données) Mais plus rapide
 					}
 				######## Fin recuperation ########
 				
@@ -191,28 +192,45 @@ def repeat(a,b):
 		mot+=str(a)
 	return mot
 
-def formateMot(a,i):
-	nbEspace=i-len(a)
+def formateMot(a,i,alignement="R"):
+	nbEspace=i-len(str(a))
 	mot=str()
 	if(nbEspace>=0):
-		mot = str(a)+repeat(" ",nbEspace)
+		if(alignement == 'L'):
+			mot = str(a)+repeat(" ",nbEspace)
+		elif(alignement== 'R'):
+			mot = repeat(" ",nbEspace)+str(a)
+		else:
+			print("Problème d'alignement du mot !")
 	
 	return mot 
 		
 ## Ok ça marche mais la sortie n'est pas encore formatée !
 def createPDB(a):
 	with open("PDB_out.PDB", "w") as fout:
-		for mod in a.keys():
-			fout.write(str("MODEL"+repeat(" ",5)+mod+"\n"))
-			for i in a[mod].keys(): # clés des chaines
-				for j in a[mod][i].keys(): # clés des résidus
-					
-					for d in a[mod][i][j].keys(): # Clés des dicoInfo (l'ID est un élément d'info
+		for mod in sorted(a.keys()): # Dans les modèles
+			fout.write(str("MODEL"+repeat(" ",5)+mod+"\n")) #On écrit le modèle qu'on est entrain de traiter
+			for i in sorted(a[mod].keys()): # clés des chaines: colonne 22
+				for j in sorted(a[mod][i].keys()): # clés des résidus : colonne 22-26
+					for d in sorted(a[mod][i][j].keys()): # Clés des dicoInfo (l'ID est un élément d'info) : colonne 12 à 16
+						#ID: colonne 6:11
+						#x : 30 à 38
+						#y : 38 à 46
+						#z : 46 à 54
+						#dom: 70 à 75
+						
 						#~ print ("[",mod,"]","[",i,"]","[",j,"]","[",d,"]")
 						#~ print(a[mod][i][j][d])
-						if(d!='cdm'): # S'il ne s'agit pas du centre de masse
-							textLine = formateMot("ATOM", 6)+str(i)+str(a[mod][i][j][d]['ID'])+"\n"
-							fout.write(textLine)
+						
+						#~ if(d!='cdm'): # S'il ne s'agit pas du centre de masse
+						
+						
+						textLine = (formateMot("ATOM", 6, alignement='L')+formateMot(str(a[mod][i][j][d]['ID']),5)+formateMot(d,4,alignement='L')+repeat(" ",6)+i+formateMot(j,4)+repeat(" ",4)+
+									formateMot(a[mod][i][j][d]['x'],8)+formateMot(a[mod][i][j][d]['y'],8)+formateMot(a[mod][i][j][d]['z'],8)+repeat(" ",16)+
+									formateMot(a[mod][i][j][d]['dom'],5)+"\n")
+						
+						fout.write(textLine)
+						
 					
 
 if __name__ == '__main__':
@@ -233,15 +251,23 @@ if __name__ == '__main__':
 	
 	dicoProt1 = lirePDB(prot1)
 	dicoProt2 = lirePDB(prot2)
+	print(dicoProt1)
+	#~ for mod in sorted(dicoProt1.keys()):
+		#~ for chaine in sorted(dicoProt1[mod].keys()):
+			#~ for residu in sorted(dicoProt1[mod][chaine].keys()): 
+				#~ # Normalement les résidus triés dans l'ordre des ID de résidus
+				#~ # On s'arrête à ce niveau de trie : car les domaines sont normalement triés aussi
+				#~ print(mod," ",chaine," ",residu," ",dicoProt1[mod][chaine][residu])
+				
 	
 	#~ print(dicoProt1)
 	#~ print(dicoProt2)
 	
-	addAtomWeight(ficAtome,dicoProt1)
-	addAtomWeight(ficAtome,dicoProt2)
+	#~ addAtomWeight(ficAtome,dicoProt1)
+	#~ addAtomWeight(ficAtome,dicoProt2)
 	
-	ajouterCentreDeMasse(dicoProt1)
-	ajouterCentreDeMasse(dicoProt2)
+	#~ ajouterCentreDeMasse(dicoProt1)
+	#~ ajouterCentreDeMasse(dicoProt2)
 	
 	
 	#~ print(dicoProt2)
@@ -249,8 +275,8 @@ if __name__ == '__main__':
 	createPDB(dicoProt1)
 	
 	
-	mat = distance(monDico)
-	printDistance(mat)
+	#~ mat = distance(monDico)
+	#~ printDistance(mat)
 	
 	
 
