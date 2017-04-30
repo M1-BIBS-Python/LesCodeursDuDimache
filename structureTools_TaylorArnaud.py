@@ -222,31 +222,21 @@ def formateMot(a,i,alignement="R"):
 	return mot 
 		
 ## Ok ça marche mais la sortie n'est pas encore formatée !
-def createPDB(a):
-	with open("PDB_out.PDB", "w") as fout:
-		for mod in sorted(a.keys()): # Dans les modèles
-			fout.write(str("MODEL"+repeat(" ",5)+mod+"\n")) #On écrit le modèle qu'on est entrain de traiter
-			for dom in sorted(a[mod].keys()):
+def createPDB(a,dossier=""):
+	for mod in sorted(a.keys()): # Dans les modèles
+		for dom in sorted(a[mod].keys()):
+			#A chaque changement de domaine, le fichier d'écriture change
+			with open(str(dossier+"/"+dom+"_"+mod+".PDB"), "w") as fout:
 				for i in sorted(a[mod][dom].keys()): # clés des chaines: colonne 22
 					for j in sorted(a[mod][dom][i].keys()): # clés des résidus : colonne 22-26
-						for d in sorted(a[mod][dom][i][j].keys()): # Clés des dicoInfo (l'ID est un élément d'info) : colonne 12 à 16
-							#ID: colonne 6:11
-							#x : 30 à 38
-							#y : 38 à 46
-							#z : 46 à 54
-							#dom: 70 à 75
+						#On ne trie pas sur les noms d'atomes
+						for d in sorted(a[mod][dom][i][j].keys()): # Clés des dicoInfo (noms atomes) (l'ID est un élément d'info) : colonne 12 à 16
 							
-							print ("[",mod,"]","[",dom,"]","[",i,"]","[",j,"]","[",d,"]")
-							print(a[mod][dom][i][j][d])
+							textLine = (formateMot("ATOM", 6, alignement='L')+formateMot(str(a[mod][dom][i][j][d]['ID']),5)+" "+formateMot(d,4,alignement='L')+repeat(" ",6)+i+formateMot(j,4)+repeat(" ",4)+
+										formateMot(a[mod][dom][i][j][d]['x'],8)+formateMot(a[mod][dom][i][j][d]['y'],8)+formateMot(a[mod][dom][i][j][d]['z'],8)+repeat(" ",16)+
+										formateMot(a[mod][dom][i][j][d],5)+repeat(" ",5)+dom+"\n")
 							
-							#~ if(d!='cdm'): # S'il ne s'agit pas du centre de masse
-							
-							
-							#~ textLine = (formateMot("ATOM", 6, alignement='L')+formateMot(str(a[mod][i][j][d]['ID']),5)+formateMot(d,4,alignement='L')+repeat(" ",6)+i+formateMot(j,4)+repeat(" ",4)+
-										#~ formateMot(a[mod][i][j][d]['x'],8)+formateMot(a[mod][i][j][d]['y'],8)+formateMot(a[mod][i][j][d]['z'],8)+repeat(" ",16)+
-										#~ formateMot(a[mod][i][j][d]['dom'],5)+"\n")
-							
-							#~ fout.write(textLine)
+							fout.write(textLine)
 
 
 											
