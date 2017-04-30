@@ -2,6 +2,7 @@
 #-*- coding : utf3 -*-
 import sys
 import math
+import glob #gestion dossieret fichier
 
 
 ## Retourne le dictionnaire atome-masse moleculaire
@@ -232,6 +233,18 @@ def createPDB(a):
 						fout.write(textLine)
 						
 					
+
+## Retourne la liste des fichiers comportant le motif recherché
+# @a : chemin du dossier comportant les fichiers d'intérêt
+# @b : motif voulu, ici le nom du domaine 
+def lecture_dossier(a,b):
+	path_ref=str(a+"/Refs/"+b) # création du chemin absolue pour accéder au fichier du domaine b dans le dossier ref
+	path_frame=str(a+"/Frames/"+b) # création du chemin absolue pour accéder au fichier du domaine b dans le dossier frame
+	ref=glob.glob(path_ref) # crée une liste des fichiers contenues dans le dossier ref contenant le motif b dans leur nom
+	frame=glob.glob(path_frame)
+	return([ref,frame])
+
+
 
 if __name__ == '__main__':
 	monDico = dict()
