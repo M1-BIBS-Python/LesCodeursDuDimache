@@ -29,7 +29,7 @@ def simple_rmsd(a,b,liste=['CA']): #Atome par défaut CA
 							s+=pow(st.distanceAtomes(a[mod][dom][j][k][l],b[mod][dom][j][k][l]),2)
 							N+=1
 	print("Paires d'atomes alignées : ",N)
-	print("Nombre résidus: ",res)
+	#~ print("Nombre résidus: ",res)
 	if(N>0):
 		return(math.sqrt(s/N))
 	#Sinon aucune paire n'a été alignée : retourne None (car division par 0 impossible)
@@ -65,7 +65,6 @@ def rmsd(a,b,modA,modB,liste=['CA']): #Atome par défaut CA
 # @b : dictionnaire de la deuxieme proteine
 # @liste : l'atome presente dans les proteines avec le quel on calcul le RMSD, par defaut la fonction prend le carbone alpha
 def res_rmsd(a,b,liste=['CA']): #Atome par défaut CA
-
 	nbRes = 0
 	dicoRmsd = dict()
 	for mod in a.keys(): # dans les modèles
@@ -92,7 +91,7 @@ def res_rmsd(a,b,liste=['CA']): #Atome par défaut CA
 ## Fonction qui permettra d'afficher le graphique RMDS vs AA positions (pas de dictionnaire en entrée car temporalité importante) (liste probablement)
 # @dic : dictionnaire de RMSD
 # @lType : type de tracer, par defaut en ligne 
-def drawRMDS(dic,lType='-'):
+def drawRMDS(dic,lType='-',title="A Graph Has No Name."):
 	listCle =list()
 	listVal =list()
 	for a in dic.keys():
@@ -101,10 +100,14 @@ def drawRMDS(dic,lType='-'):
 	
 	print("Je dessine")
 	plt.plot(listCle,listVal,lType)
+	plt.title(title)
 	plt.ylabel('RMSD(A)')
 	plt.xlabel('aa positions')
 	print("Dessin terminé !")
 	plt.show()
+
+
+
 
 if __name__ == '__main__':
 	monDico = dict()
