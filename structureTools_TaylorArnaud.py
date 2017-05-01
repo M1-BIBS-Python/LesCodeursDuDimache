@@ -5,6 +5,11 @@ import math
 import glob, shutil #gestion dossier et fichier
 
 
+#optimisation multithreading
+import itertools
+from multiprocessing.dummy import Pool as ThreadPool 
+
+
 ## Retourne le dictionnaire atome-masse moleculaire
 # @a : chemin du fichier de donnees atome-masse moleculaire
 def lireAtoms(a):
@@ -93,13 +98,14 @@ def selectElement(atomeName):
 	atomeName=atomeName.strip()
 	courant = ['C','H','O','N','P','S']
 	other = ['ZN', 'FE','CA']
+	
 	if atomeName[0:2] in other:
 		return atomeName[0:2]	
 	elif atomeName[0] in courant:
 		return atomeName[0]
 	
 	else:
-		print("Un atome non répertorié utilisé !")
+		print("Un atome non répertorié utilisé ! ",atomeName)
 		
 ##Ajoute au dictionnaire info (pour chaque atome) la masse de l'atome 'atmW'
 # @pathAtomes : 
@@ -220,23 +226,56 @@ def formateMot(a,i,alignement="R"):
 			print("Problème d'alignement du mot !")
 	
 	return mot 
-		
+
 ## Crée un fichier PDB par modèle et par domaine à partir d'un fichier pdb de base contenant (ou pas) plusieurs modèles et domaines
 # @a : dictionnaire contenant le fichier pdb de base 
 # @b : nom du dossier dans lequel stocker les fichiers créés
-def createPDB(a,dossier):
+def createPDB(a,dossier=""): #OBSOLETE ?!
+	for mod in sorted(a.keys()): # Dans les modèles
+		for dom in sorted(a[mod].keys()):
+			#A chaque changement de domaine, le fichier d'écriture change
+			with open(str(dossier)+"/"+str(dom)+"_"+str(mod)+".PDB", "w") as fout:
+				fout.write(formateMot("MODEL",6)+"    "+formateMot(mod,6,alignement='L')+"\n")
+				for i in sorted(a[mod][dom].keys()): # clés des chaines: colonne 22
+					for j in sorted(a[mod][dom][i].keys()): # clés des résidus : colonne 22-26
+						#On ne trie pas sur les noms d'atomes
+						for d in sorted(a[mod][dom][i][j].keys()): # Clés des dicoInfo (noms atomes) (l'ID est un élément d'info) : colonne 12 à 16
+							
+							textLine = (formateMot("ATOM", 6, alignement='L')+formateMot(str(a[mod][dom][i][j][d]['ID']),5)+" "+formateMot(d,4,alignement='L')+repeat(" ",6)+i+formateMot(j,4)+repeat(" ",4)+
+									 	formateMot(a[mod][dom][i][j][d]['x'],8)+formateMot(a[mod][dom][i][j][d]['y'],8)+formateMot(a[mod][dom][i][j][d]['z'],8)+
+										formateMot(a[mod][dom][i][j][d],5)+repeat(" ",18)+formateMot(dom,3,alignement='L')+"\n")
+							
+							fout.write(textLine)
+							
+
+## Crée un fichier PDB par modèle et par domaine à partir d'un fichier pdb de base contenant (ou pas) plusieurs modèles et domaines
+## Version optimisée pour utiliser 8 coeurs
+# @a : dictionnaire contenant le fichier pdb de base 
+# @b : nom du dossier dans lequel stocker les fichiers créés
+def createPDBMultiThreads(a,dossier):
 	path = dossier+"/"
 	if(os.path.exists(path)):
-		print('Le dossier existe déjà. Il va être réécri !')
+		print('Le dossier existe déjà. Il va être réécrit !')
 		shutil.rmtree(path)
 		
 	print("Création du dossier:",dossier)
 	os.mkdir(path);
-
-	for mod in sorted(a.keys()): # Dans les modèles
-		for dom in sorted(a[mod].keys()):
+	
+	pool = ThreadPool(4)  # On va utiliser 4 threads (si coeurs virtuels temps presque pareil)
+	#Début de l'écriture: 1 modèle sur 1 thread
+	pool.starmap(createThread,zip(itertools.repeat(a),itertools.repeat(path),sorted(a.keys())))
+	pool.close()
+	pool.join()
+	
+## Fonction helper de createPDB pour un modèle donné, crée les fichiers pdb associés à ce modèle
+#@a :dictionnaire sur lequel on travaille
+#@path :chemin du dossier de stockage
+#@mod : modèle à traiter
+def createThread(a,path,mod):
+	for dom in sorted(a[mod].keys()):
 			#A chaque changement de domaine, le fichier d'écriture change
 			with open(str(path)+str(dom)+"_"+str(mod)+".PDB","w") as fout:
+				fout.write(formateMot("MODEL",6,alignement='L')+repeat(" ",4)+formateMot(mod,6,alignement='L')+"\n")
 				for i in sorted(a[mod][dom].keys()): # clés des chaines: colonne 22
 					for j in sorted(a[mod][dom][i].keys()): # clés des résidus : colonne 22-26
 						#On ne trie pas sur les noms d'atomes
@@ -247,7 +286,6 @@ def createPDB(a,dossier):
 										formateMot(a[mod][dom][i][j][d],5)+repeat(" ",5)+dom+"\n")
 							
 							fout.write(textLine)
-
 
 											
 ## Retourne la liste des fichiers comportant le motif recherché
@@ -276,6 +314,8 @@ if __name__ == '__main__':
 		print("Le format d'entrée attendu est : structureTools_TaylorArnaud.py fichier_1.PDB fichier_2.PDB [atomes.txt]")
 		exit()
 	
+	os.nice(10) # Le processus reçoit le niveau maximum de priorité !
+	
 	dicoProt1 = lirePDB(prot1)
 	dicoProt2 = lirePDB(prot2)				
 
@@ -285,8 +325,8 @@ if __name__ == '__main__':
 	#~ ajouterCentreDeMasse(dicoProt1)
 	#~ ajouterCentreDeMasse(dicoProt2)
 	
-	createPDB(dicoProt1,"Refs")
-	createPDB(dicoProt2,"Frames")
+	createPDBMultiThreads(dicoProt1,"Refs")
+	createPDBMultiThreads(dicoProt2,"Frames")
 	
 	#~ mat = distance(monDico)
 	#~ printDistance(mat)
