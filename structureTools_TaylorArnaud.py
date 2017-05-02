@@ -332,14 +332,15 @@ def contact(a,b):
 						for dom2 in b[mod2].keys(): # domaine
 							for chain2 in b[mod2][dom2].keys(): # cahin
 								for res2 in b[mod2][dom2][chain2].keys(): # residu 
-									path1= "1"+str(mod)+str(dom)+str(chain)+str(res)
-									path2="2"+str(mod2)+str(dom2)+str(chain2)+str(res2)
+									path1= "1"+str(dom)+str(chain)+str(res)
+									path2="2"+str(dom2)+str(chain2)+str(res2)
 									c=contact_residu(b[mod2][dom2][chain2][res2], a[mod][dom][chain][res])
 									if(c==1 and path1 not in contact.keys() ):
-										contact[path1]={}
-										
+										contact[path1]={}	
 									if(c==1 and path2 not in contact[path1].keys()):
-										contact[path1][path2]={ 'cdm1': a[mod][dom][chain][res]['cdm'], 'cdm2': b[mod2][dom2][chain2][res2]['cdm']}
+										contact[path1][path2]=0
+									if(c==1 and path2 in contact[path1].keys()):
+										contact[path1][path2]+=1
 	return(contact)
 
 
