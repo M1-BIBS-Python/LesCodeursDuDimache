@@ -254,7 +254,8 @@ def createThread(a,path,mod):
 							
 							textLine = (formateMot("ATOM", 6, alignement='L')+formateMot(str(a[mod][dom][i][j][d]['ID']),5)+" "+formateMot(d,4,alignement='L')+repeat(" ",6)+i+formateMot(j,4)+repeat(" ",4)+
 										formateMot(a[mod][dom][i][j][d]['x'],8)+formateMot(a[mod][dom][i][j][d]['y'],8)+formateMot(a[mod][dom][i][j][d]['z'],8)+repeat(" ",16)+
-										formateMot(a[mod][dom][i][j][d],5)+repeat(" ",5)+dom+"\n")
+										repeat(" ",2)+dom+"\n")
+										#formateMot(a[mod][dom][i][j][d],5)
 							
 							fout.write(textLine)
 					
@@ -267,7 +268,7 @@ def lecture_dossier(a,b):
 	ref=glob.glob(path_ref) # crée une liste des fichiers contenues dans le dossier ref contenant le motif b dans leur nom
 	frame=glob.glob(path_frame)
 	
-	return(ref+frame)
+	return([ref,frame])
 
 ## Retourne un dictionnaire "a" avec le centre de masse des residus
 # @a : dicionnaire d'un fichier pdb
@@ -279,6 +280,7 @@ def cdm(a):
 				for l in a[i][j][k].keys(): # parcourt les residus
 					cdm={'x':0 , 'y':0, 'z':0, 'r':0}
 					div=0
+					
 					for p in a[i][j][k][l].keys(): # parcourt les infos	
 						## Si la masse atomique est disponible, on fait un calcul plus précis
 						if('atmW' in a[i][j][k][l][p]):
@@ -290,6 +292,9 @@ def cdm(a):
 						cdm['y']+=atmW*a[i][j][k][l][p]['y']
 						cdm['z']+=atmW*a[i][j][k][l][p]['z']
 						div=div+1
+						rayon=distanceAtomes(a[i][j][k][l][p],cdm)
+						if(cdm['r']<rayon):
+							cdm['r']=rayon
 					
 					cdm['x']/=div	
 					cdm["y"]/=div
@@ -297,7 +302,7 @@ def cdm(a):
 					a[i][j][k][l]["cdm"]=cdm
 					# sous l'hyp le cdm est à équi-distant de tout les atomes des residus
 					# le rayon du cbm 
-					cdm['r']=distanceAtomes(a[i][j][k][l][p],cdm)
+					
 					
 			
 	return a
@@ -309,8 +314,8 @@ def contact_residu(a,b):
 	dist=distanceAtomes(a['cdm'],b['cdm']) # distance entre les deux cdm
 
 	sumR=a['cdm']['r']+b['cdm']['r'] 
-				
-	if(dist <= sumR):
+	interaction=4 # distance d'interaction hydrogene		
+	if(dist <= sumR+interaction):
 		contact=1
 	else:
 		contact=0					
@@ -331,16 +336,19 @@ def contact(a,b,ct):
 						for dom2 in b[mod2].keys(): # domaine
 							for chain2 in b[mod2][dom2].keys(): # cahin
 								for res2 in b[mod2][dom2][chain2].keys(): # residu 
-									path1= "1"+str(dom)+str(chain)+str(res)
-									path2="2"+str(dom2)+str(chain2)+str(res2)
-									c=ct_residu(b[mod2][dom2][chain2][res2], a[mod][dom][chain][res])
+									path1= str(dom)+"_"+str(res)
+									path2= str(dom2)+"_"+str(res2)
+									c=contact_residu(b[mod2][dom2][chain2][res2], a[mod][dom][chain][res])	
+									
+																
 									if(c==1 and path1 not in ct.keys() ):
 										ct[path1]={}	
-									if(c==1 and path2 not in ct[path1].keys()):
-										ct[path1][path2]=1
-									if(c==1 and path2 in ct[path1].keys()):
-										ct[path1][path2]+=1
-	return(ct)
+									print(path1,path2,"\n")	
+									#~ if(c==1 and path2 not in ct[path1].keys()):
+										#~ ct[path1][path2]={"occ":0}
+										
+									#~ elif(c==1 and path2 in ct[path1].keys()):
+										#~ ct[path1][path2]=2
 
 
 if __name__ == '__main__':
@@ -378,23 +386,35 @@ if __name__ == '__main__':
 	
 ########################################	
 	prot=sys.argv[1]
-	print(prot)
-	prot2=sys.argv[2]	
-	print(2)
-	dicoProt2 = lirePDB(prot2)
-	print(3)
-	dicoProt2=cdm(dicoProt2)
-	print(4)
-	l=lecture_dossier(prot,"A*")
-	print(l)
 	ct=dict()
-	for i in l :
-		prot1=i				
-		print (i)
-		dicoProt1= lirePDB(prot1)
-		dicoProt1=cdm(dicoProt1)
-		contact(dicoProt1,dicoProt2,ct)
+	for i in range(0,10,10) :
+		l=lecture_dossier(prot,"A?_"+str(i)+".PDB")
+		l2=lecture_dossier(prot,"B_"+str(i)+".PDB")
+		l2=l2[0]+l2[1]
+		l=l[0]+l[1]	
+		p2=lirePDB(l2[0])
+		p2=cdm(p2)
+		
+		for j in l:
+			p1=j	
+			p1= lirePDB(p1)
+			p1=cdm(p1)
+			contact(p1,p2,ct)
 	
-	print(ct)	
+	print(ct)
 		
+	print(len(ct))
 		
+	#~ for i in ct.keys():
+		#~ print(i,"\n")
+		#~ for j in ct[i].keys():
+			#~ print(ct[i])
+			#~ ct[i][j]["freq"]=(ct[i][j]/500)
+			#~ ct[i][j]["tps"]=(ct[i][j]*(10/500))
+			
+	#~ print(ct)
+			
+	
+	
+	
+				
