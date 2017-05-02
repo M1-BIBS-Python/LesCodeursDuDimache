@@ -386,15 +386,15 @@ if __name__ == '__main__':
 	print(3)
 	dicoProt2=cdm(dicoProt2)
 	print(4)
-	#~ l=lecture_dossier(prot,"A*")
-	#~ print(l)
-	#~ for i in l :
-	#~ prot1=i				
-	#~ print (i)
-	dicoProt= lirePDB(prot)
-	dicoProt=cdm(dicoProt)
+	l=lecture_dossier(prot,"A*")
+	print(l)
+		for i in l :
+		prot1=i				
+		print (i)
+		dicoProt1= lirePDB(prot1)
+		dicoProt1=cdm(dicoProt1)
 		
-	ct=contact(dicoProt,dicoProt2)
-	print(ct)	
-	print(len(ct))
+		ct=contact(dicoProt1,dicoProt2)
+		print(ct)	
+		
 		
