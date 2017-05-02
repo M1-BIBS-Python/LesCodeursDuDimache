@@ -25,13 +25,20 @@ import structureTools_TaylorArnaud as st
 
 if __name__ == '__main__':
  
+	if (len(sys.argv)== 2):
+		prot=sys.argv[1]
+		
+		print("Default mode !")
+	else:
+		print("Le format d'entrée attendu est : structureTools_TaylorArnaud.py fichier_1.PDB fichier_2.PDB [atomes.txt]")
+		exit()
  
  ########################################	
 	#~ prot=sys.argv[1]
 	ct=dict()
 	
 	## Pour chaque conformation données : de 0 à 5000 (automatiser la lecture des confs)
-	for i in range(0,100,10) :
+	for i in range(0,5000,10) :
 		l=st.lecture_dossier("./","A?_"+str(i)+".PDB") #Lecture dossier ref
 		l2=st.lecture_dossier("./","B_"+str(i)+".PDB") #Lecture dossier dyn
 		
@@ -39,15 +46,10 @@ if __name__ == '__main__':
 		l2=l2[0]+l2[1] 
 		l=l[0]+l[1]	
 		
-		#~ print(l2)
-		#~ print(l)
-		## OK
-		
-		
 		#### On a la liste des fichiers (A1,A2,A3,A4) à comparer au fichier ref(B)
 		
 		p2=st.lirePDB(l2[0]) # Lecture du PDB de référence
-		st.cdm(p2)			 # ok 
+		st.cdm(p2)			
 		
 		for p1 in l: # On parcours la liste des fichiers à lire
 			#~ print(p1) #ok
@@ -55,8 +57,6 @@ if __name__ == '__main__':
 			p1= st.lirePDB(p1)
 			st.cdm(p1)
 			st.contact(p1,p2,ct)
-			
-	#~ print(ct)
 		
 	print(len(ct))
 	
@@ -64,7 +64,7 @@ if __name__ == '__main__':
 	
 	###########
 	for i in ct.keys():
-		#~ print(i,"\n")
+		
 		for j in ct[i].keys():
 			
 			ct[i][j]= {'freq':0, 'tps':0, 'val':ct[i][j]}
@@ -77,7 +77,7 @@ if __name__ == '__main__':
 			if int(j[2:4]) in list(range(23,38)):
 				print(l," : ",j)
 	
-	#~ print(ct)
+
 	
 	
 			
