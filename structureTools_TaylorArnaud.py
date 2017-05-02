@@ -129,34 +129,6 @@ def addAtomWeight(pathAtomes, dicoPDB):
 						else: # Le nom de l'élément a été récupéré, on ajoute sa masse
 							dicoPDB[model][dom][chaine][residu][atome]['atmW']=masseAtomes[elem]
 		
-## Ajoute pour chaque residu du dictionnaire b la position (x,y,z) de son centre de masse
-# @a: dictionnaire issu de la commande lirePDB
-def ajouterCentreDeMasse(a):
-	for mod in a.keys():
-		for dom in a[mod].keys():
-			for i in a[mod][dom].keys():			# On parcours la chaine
-				for j in a[mod][dom][i].keys():	# On parcours les residus
-					cdm = {'x':0,'y':0,'z':0}
-					masseTotale=0
-					for k in a[mod][dom][i][j].keys(): # Extraction des infos pour chaque atome
-						## Si la masse atomique est disponible, on fait un calcul plus précis
-						if('atmW' in a[mod][dom][i][j][k]):
-							atmW = a[mod][dom][i][j][k]['atmW']
-						else: # Sinon on considère que tous les atomes ont une masse atomique de 1
-							atmW = 1
-							
-						cdm['x']+=atmW*a[mod][dom][i][j][k]['x']
-						cdm['y']+=atmW*a[mod][dom][i][j][k]['y']
-						cdm['z']+=atmW*a[mod][dom][i][j][k]['z']
-						
-						masseTotale+=atmW
-						
-					cdm['x']/=masseTotale
-					cdm['y']/=masseTotale
-					cdm['z']/=masseTotale
-					
-					a[mod][dom][i][j]['cdm']=cdm
-
 ## prend en entrée deux atomes (donc les dico d'info des deux atomes) (x,y,z) et retourne la distance entre eux
 def distanceAtomes(a,b):
 	x1 = a['x']
@@ -247,7 +219,6 @@ def createPDB(a,dossier=""): #OBSOLETE ?!
 							
 							fout.write(textLine)
 							
-
 ## Crée un fichier PDB par modèle et par domaine à partir d'un fichier pdb de base contenant (ou pas) plusieurs modèles et domaines
 ## Version optimisée pour utiliser 8 coeurs
 # @a : dictionnaire contenant le fichier pdb de base 
@@ -286,17 +257,17 @@ def createThread(a,path,mod):
 										formateMot(a[mod][dom][i][j][d],5)+repeat(" ",5)+dom+"\n")
 							
 							fout.write(textLine)
-
-											
+					
 ## Retourne la liste des fichiers comportant le motif recherché
 # @a : chemin du dossier comportant les fichiers d'intérêt
 # @b : motif voulu, ici le nom du domaine 
 def lecture_dossier(a,b):
-	path_ref=str(a+"/Refs/"+b) # création du chemin absolue pour accéder au fichier du domaine b dans le dossier ref
-	path_frame=str(a+"/Frames/"+b) # création du chemin absolue pour accéder au fichier du domaine b dans le dossier frame
+	path_ref=str(a+"Refs/"+b) # création du chemin absolue pour accéder au fichier du domaine b dans le dossier ref
+	path_frame=str(a+"Frames/"+b) # création du chemin absolue pour accéder au fichier du domaine b dans le dossier frame
 	ref=glob.glob(path_ref) # crée une liste des fichiers contenues dans le dossier ref contenant le motif b dans leur nom
 	frame=glob.glob(path_frame)
-	return([ref,frame])
+	
+	return(ref+frame)
 
 ## Retourne un dictionnaire "a" avec le centre de masse des residus
 # @a : dicionnaire d'un fichier pdb
@@ -359,21 +330,21 @@ def contact(a,b):
 					# PARCOURT DICT	b 
 					for mod2 in b.keys(): # model
 						for dom2 in b[mod2].keys(): # domaine
-							for cahin2 in b[mod2][dom2].keys(): # cahin
-								for res2 in b[mod2][dom2][cahin2].keys(): # residu 
-									path1= "1"+mod+dom+chain+str(res)
-									path2="2"+mod2+dom2+cahin2+str(res2)
-									c=contact_residu(b[mod2][dom2][cahin2][res2], a[mod][dom][chain][res])
+							for chain2 in b[mod2][dom2].keys(): # cahin
+								for res2 in b[mod2][dom2][chain2].keys(): # residu 
+									path1= "1"+str(mod)+str(dom)+str(chain)+str(res)
+									path2="2"+str(mod2)+str(dom2)+str(chain2)+str(res2)
+									c=contact_residu(b[mod2][dom2][chain2][res2], a[mod][dom][chain][res])
 									if(c==1 and path1 not in contact.keys() ):
 										contact[path1]={}
 										
 									if(c==1 and path2 not in contact[path1].keys()):
-										contact[path1][path2]=c
+										contact[path1][path2]={ 'cdm1': a[mod][dom][chain][res]['cdm'], 'cdm2': b[mod2][dom2][chain2][res2]['cdm']}
 	return(contact)
 
 
 if __name__ == '__main__':
-	monDico = dict()
+	#~ monDico = dict()
 	
 	#~ if (len(sys.argv) == 4):
 		#~ prot1 =sys.argv[1]
@@ -396,8 +367,8 @@ if __name__ == '__main__':
 	#~ addAtomWeight(ficAtome,dicoProt1)
 	#~ addAtomWeight(ficAtome,dicoProt2)
 	
-	#~ ajouterCentreDeMasse(dicoProt1)
-	#~ ajouterCentreDeMasse(dicoProt2)
+	#~ cdm(dicoProt1)
+	#~ cdm(dicoProt2)
 	
 	#~ createPDBMultiThreads(dicoProt1,"Refs")
 	#~ createPDBMultiThreads(dicoProt2,"Frames")
@@ -405,16 +376,24 @@ if __name__ == '__main__':
 	#~ mat = distance(monDico)
 	#~ printDistance(mat)
 	
-	prot1 =sys.argv[1]
-	prot2 =sys.argv[2]
-	dicoProt1 = lirePDB(prot1)
+########################################	
+	prot=sys.argv[1]
+	print(prot)
+	prot2=sys.argv[2]	
+	print(2)
 	dicoProt2 = lirePDB(prot2)
-	#~ print(dicoProt1)
-	dicoProt1=cdm(dicoProt1)
+	print(3)
 	dicoProt2=cdm(dicoProt2)
-	contact=contact(dicoProt1,dicoProt2)
-	print(contact)
-	print(len(contact))
-	
-
-
+	print(4)
+	#~ l=lecture_dossier(prot,"A*")
+	#~ print(l)
+	#~ for i in l :
+	#~ prot1=i				
+	#~ print (i)
+	dicoProt= lirePDB(prot)
+	dicoProt=cdm(dicoProt)
+		
+	ct=contact(dicoProt,dicoProt2)
+	print(ct)	
+	print(len(ct))
+		

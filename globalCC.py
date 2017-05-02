@@ -93,4 +93,8 @@ if __name__ == '__main__':
 	for dom in toDraw.keys():
 		r.drawRMDS(toDraw[dom],'ro',str(dom))
 		
+	#################################################################
+	##### Identifications des résidus appartenant à l'interface #####
+	#################################################################
+	
 		

@@ -136,7 +136,18 @@ def RMSD_atom(a,b):
 	# calcul le RMSD
 	RMSD=math.sqrt(som/N)
 	print("Nombre d'atomes="+str(N))
-	return RMSD			
+	return RMSD		
+	
+## Retourne la liste des fichiers comportant le motif recherché
+# @a : chemin du dossier comportant les fichiers d'intérêt
+# @b : motif voulu, ici le nom du domaine 
+def lecture_dossier(a,b):
+	path_ref=str(a+"/Refs/"+b) # création du chemin absolue pour accéder au fichier du domaine b dans le dossier ref
+	path_frame=str(a+"/Frames/"+b) # création du chemin absolue pour accéder au fichier du domaine b dans le dossier frame
+	ref=glob.glob(path_ref) # crée une liste des fichiers contenues dans le dossier ref contenant le motif b dans leur nom
+	frame=glob.glob(path_frame)
+	return([ref,frame])
+		
 					
 def distance(a,b):
 	# correspond aux coordonnee de l'atome de la chaine 1 
@@ -166,6 +177,78 @@ def RMSD_residu(a,b,atome):
 	print("Nombre de residus ="+str(N))
 	return RMSD	
 
+## Retourne un dictionnaire "a" avec le centre de masse des residus
+# @a : dicionnaire d'un fichier pdb
+def cdm(a):
+
+	for i in a.keys():   # parcourt les models
+		for j in a[i].keys(): # parcourt les domaines
+			for k in a[i][j].keys(): # parcourt les chaines
+				for l in a[i][j][k].keys(): # parcourt les residus
+					cdm={'x':0 , 'y':0, 'z':0, 'r':0}
+					div=0
+					for p in a[i][j][k][l].keys(): # parcourt les infos	
+						## Si la masse atomique est disponible, on fait un calcul plus précis
+						if('atmW' in a[i][j][k][l][p]):
+							atmW = a[i][j][k][l][p]['atmW']
+						else: # Sinon on considère que tous les atomes ont une masse atomique de 1
+							atmW = 1
+											
+						cdm['x']+=atmW*a[i][j][k][l][p]['x']
+						cdm['y']+=atmW*a[i][j][k][l][p]['y']
+						cdm['z']+=atmW*a[i][j][k][l][p]['z']
+						div=div+1
+					
+					cdm['x']/=div	
+					cdm["y"]/=div
+					cdm["z"]/=div
+					a[i][j][k][l]["cdm"]=cdm
+					# sous l'hyp le cdm est à équi-distant de tout les atomes des residus
+					# le rayon du cbm 
+					cdm['r']=distanceAtomes(a[i][j][k][l][p],cdm)
+					
+			
+	return a
+
+## Renvoie 1 si il y a contact entre les deux residus sinon 0
+# @a: dictionnaire d'un residu contenant un cdm
+# @b : dictionnaire d'un residu contenant un cdm
+def contact_residu(a,b):
+	dist=distanceAtomes(a['cdm'],b['cdm']) # distance entre les deux cdm
+
+	sumR=a['cdm']['r']+b['cdm']['r'] 
+				
+	if(dist <= sumR):
+		contact=1
+	else:
+		contact=0					
+			
+	return contact
+	
+## Renvoie un dictionnaire contenant les résidus en contacts 
+# @a: dictionnaire d'une proteirn avec les cdm
+# @b : dictionnaire d'une proteine avec les cdm
+def contact(a,b):
+	contact={}
+	# PARCOURT DICT a
+	for mod in a.keys(): # model
+		for dom in a[mod].keys(): # domaine
+			for chain in a[mod][dom].keys(): # chain
+				for res in a[mod][dom][chain].keys(): # residu 
+					# PARCOURT DICT	b 
+					for mod2 in b.keys(): # model
+						for dom2 in b[mod2].keys(): # domaine
+							for cahin2 in b[mod2][dom2].keys(): # cahin
+								for res2 in b[mod2][dom2][cahin2].keys(): # residu 
+									path1= "1"+mod+dom+chain+str(res)
+									path2="2"+mod2+dom2+cahin2+str(res2)
+									c=contact_residu(b[mod2][dom2][cahin2][res2], a[mod][dom][chain][res])
+									if(c==1 and path1 not in contact.keys() ):
+										contact[path1]={}
+										
+									if(c==1 and path2 not in contact[path1].keys()):
+										contact[path1][path2]=c
+	return(contact)
 
 
 #~ def graphe(chain):
