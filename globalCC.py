@@ -30,13 +30,13 @@ if __name__ == '__main__':
 	model_ref = list(dico_structure_Ref.keys()).pop()
 	res=dict()
 	for model_dyn in dico_dynamique.keys():
-		res[model_dyn] = r.rmsd(dico_structure_Ref,dico_dynamique,model_ref,model_dyn)
+		res[model_dyn] = r.rmsd(dico_structure_Ref,dico_dynamique,model_ref,model_dyn,['CA','O','N','C5'])
 	
 	#~ #Visualisation avec un nuage de points = Mieux
-	r.drawRMDS(res,'ro')
+	r.drawRMDS(res, title="RMSD vs Time")
 	
-	#~ st.createPDBMultiThreads(dicoProt1,"Refs")
-	#~ st.createPDBMultiThreads(dicoProt2,"Frames")
+	st.createPDBMultiThreads(dico_structure_Ref,"Refs")
+	st.createPDBMultiThreads(dico_dynamique,"Frames")
 	
 	#########################################
 	##### Etape 2 : RMSD des 5 domaines #####
@@ -52,7 +52,7 @@ if __name__ == '__main__':
 	# Parcours des domaines possibles
 	for dom in refId: 
 		#Extraction des conformations possibles pour le domaine d'intérêt
-		currentDom=st.lecture_dossier(".",dom+'*') 	# Récupération du chemin de tous les fichiers associé au domaine dom
+		currentDom=st.lecture_dossier("./",dom+'*') 	# Récupération du chemin de tous les fichiers associé au domaine dom
 		confRef = st.lirePDB(currentDom[0][0]) 		# Chemin de la conformation de référence
 		y = list(confRef.keys())
 		y = int(y.pop())
@@ -65,7 +65,7 @@ if __name__ == '__main__':
 			if z not in dicConfs.keys():
 				dicConfs[z] ={} 			# Sauvegarde nouvelle configuration
 				
-			w = r.rmsd(confRef,fic,y,z)		# Calcul du RMSD pour chaque configuration
+			w = r.rmsd(confRef,fic,y,z,['CA','O','N','C5'])		# Calcul du RMSD pour chaque configuration
 			if(w != None):					# Si calcul possible (CA alignés) 
 				dicConfs[z][dom]= w			# Sauvegarde
 	
@@ -91,7 +91,7 @@ if __name__ == '__main__':
 	##### Représentation graphique #####
 	####################################
 	for dom in toDraw.keys():
-		r.drawRMDS(toDraw[dom],'ro',str(dom))
+		r.drawRMDS(toDraw[dom],title="flexibility of "+str(dom)+".")
 		
 	#################################################################
 	##### Identifications des résidus appartenant à l'interface #####

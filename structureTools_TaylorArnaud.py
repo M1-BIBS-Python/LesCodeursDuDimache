@@ -278,7 +278,7 @@ def cdm(a):
 		for j in a[i].keys(): # parcourt les domaines
 			for k in a[i][j].keys(): # parcourt les chaines
 				for l in a[i][j][k].keys(): # parcourt les residus
-					cdm={'x':0 , 'y':0, 'z':0, 'r':0}
+					cdm={'x':0 , 'y':0, 'z':0,'r':0}
 					div=0
 					
 					for p in a[i][j][k][l].keys(): # parcourt les infos	
@@ -292,9 +292,6 @@ def cdm(a):
 						cdm['y']+=atmW*a[i][j][k][l][p]['y']
 						cdm['z']+=atmW*a[i][j][k][l][p]['z']
 						div=div+1
-						rayon=distanceAtomes(a[i][j][k][l][p],cdm)
-						if(cdm['r']<rayon):
-							cdm['r']=rayon
 					
 					cdm['x']/=div	
 					cdm["y"]/=div
@@ -305,16 +302,31 @@ def cdm(a):
 					
 					
 			
-	return a
+	#~ return a
 
+# Rajoute au dico ['cdm'] le rayon maximum entre l'atome le plus éloigné du résidu et le centre de masse
+def rayonCDM(a):
+	
+	for i in a.keys():   # parcourt les models
+		for j in a[i].keys(): # parcourt les domaines
+			for k in a[i][j].keys(): # parcourt les chaines
+				for l in a[i][j][k].keys(): # parcourt les residus
+					for m in a[i][j][k][l].keys(): 
+						if(m!='cdm'):
+							rayon=distanceAtomes(a[i][j][k][l][m],a[i][j][k][l]['cdm'])
+							if(a[i][j][k][l]['cdm']['r']<rayon):
+								a[i][j][k][l]['cdm']['r']=rayon
+								
+		
+	
 ## Renvoie 1 si il y a contact entre les deux residus sinon 0
 # @a: dictionnaire d'un residu contenant un cdm
 # @b : dictionnaire d'un residu contenant un cdm
 def contact_residu(a,b):
 	dist=distanceAtomes(a['cdm'],b['cdm']) # distance entre les deux cdm
-
+	
 	sumR=a['cdm']['r']+b['cdm']['r'] 
-	interaction=4 # distance d'interaction hydrogene		
+	interaction=2.2 # distance d'interaction hydrogene		
 	if(dist <= sumR+interaction):
 		contact=1
 	else:
@@ -326,94 +338,71 @@ def contact_residu(a,b):
 # @a: dictionnaire d'une proteirn avec les cdm
 # @b : dictionnaire d'une proteine avec les cdm
 def contact(a,b,ct):
+	
+	rayonCDM(a)
+	rayonCDM(b)
+	
 	# PARCOURT DICT a
 	for mod in a.keys(): # model
 		for dom in a[mod].keys(): # domaine
 			for chain in a[mod][dom].keys(): # chain
 				for res in a[mod][dom][chain].keys(): # residu 
+				
 					# PARCOURT DICT	b 
 					for mod2 in b.keys(): # model
 						for dom2 in b[mod2].keys(): # domaine
 							for chain2 in b[mod2][dom2].keys(): # cahin
 								for res2 in b[mod2][dom2][chain2].keys(): # residu 
+									
+									## Pour chaque résidu, on regarde s'il y a contacte
+									# Si c'est le cas on affiche le résidu
+									
 									path1= str(dom)+"_"+str(res)
 									path2= str(dom2)+"_"+str(res2)
 									c=contact_residu(b[mod2][dom2][chain2][res2], a[mod][dom][chain][res])	
-									
 																
 									if(c==1 and path1 not in ct.keys() ):
-										ct[path1]={}	
-									print(path1,path2,"\n")	
-									#~ if(c==1 and path2 not in ct[path1].keys()):
-										#~ ct[path1][path2]={"occ":0}
-										
-									#~ elif(c==1 and path2 in ct[path1].keys()):
-										#~ ct[path1][path2]=2
+										ct[path1]={}		
+									if(c==1 and path2 not in ct[path1].keys()):
+										ct[path1][path2]=1
+									elif(c==1 and path2 in ct[path1].keys()):
+										ct[path1][path2]+=1 
 
 
 if __name__ == '__main__':
-	#~ monDico = dict()
+	monDico = dict()
 	
-	#~ if (len(sys.argv) == 4):
-		#~ prot1 =sys.argv[1]
-		#~ prot2 =sys.argv[2]
-		#~ ficAtome=sys.argv[3]
-		#~ print("Fichier ",ficAtome," fourni comme fichier d'atomes !")
-	#~ elif (len(sys.argv)== 3):
-		#~ prot1 =sys.argv[1]
-		#~ prot2 =sys.argv[2]
-		#~ print("Default mode !")
-	#~ else:
-		#~ print("Le format d'entrée attendu est : structureTools_TaylorArnaud.py fichier_1.PDB fichier_2.PDB [atomes.txt]")
-		#~ exit()
+	if (len(sys.argv) == 4):
+		prot1 =sys.argv[1]
+		prot2 =sys.argv[2]
+		ficAtome=sys.argv[3]
+		print("Fichier ",ficAtome," fourni comme fichier d'atomes !")
+	elif (len(sys.argv)== 3):
+		prot1 =sys.argv[1]
+		prot2 =sys.argv[2]
+		print("Default mode !")
+	else:
+		print("Le format d'entrée attendu est : structureTools_TaylorArnaud.py fichier_1.PDB fichier_2.PDB [atomes.txt]")
+		exit()
 	
-	#~ os.nice(10) # Le processus reçoit le niveau maximum de priorité !
+	os.nice(10) # Le processus reçoit le niveau maximum de priorité !
 	
-	#~ dicoProt1 = lirePDB(prot1)
-	#~ dicoProt2 = lirePDB(prot2)				
+	dicoProt1 = lirePDB(prot1)
+	dicoProt2 = lirePDB(prot2)				
 
-	#~ addAtomWeight(ficAtome,dicoProt1)
-	#~ addAtomWeight(ficAtome,dicoProt2)
+	addAtomWeight(ficAtome,dicoProt1)
+	addAtomWeight(ficAtome,dicoProt2)
 	
-	#~ cdm(dicoProt1)
-	#~ cdm(dicoProt2)
+	cdm(dicoProt1)
+	cdm(dicoProt2)
 	
-	#~ createPDBMultiThreads(dicoProt1,"Refs")
-	#~ createPDBMultiThreads(dicoProt2,"Frames")
+	createPDBMultiThreads(dicoProt1,"Refs")
+	createPDBMultiThreads(dicoProt2,"Frames")
 	
-	#~ mat = distance(monDico)
-	#~ printDistance(mat)
+	mat = distance(monDico)
+	printDistance(mat)
 	
-########################################	
-	prot=sys.argv[1]
-	ct=dict()
-	for i in range(0,10,10) :
-		l=lecture_dossier(prot,"A?_"+str(i)+".PDB")
-		l2=lecture_dossier(prot,"B_"+str(i)+".PDB")
-		l2=l2[0]+l2[1]
-		l=l[0]+l[1]	
-		p2=lirePDB(l2[0])
-		p2=cdm(p2)
-		
-		for j in l:
-			p1=j	
-			p1= lirePDB(p1)
-			p1=cdm(p1)
-			contact(p1,p2,ct)
-	
-	print(ct)
-		
-	print(len(ct))
-		
-	#~ for i in ct.keys():
-		#~ print(i,"\n")
-		#~ for j in ct[i].keys():
-			#~ print(ct[i])
-			#~ ct[i][j]["freq"]=(ct[i][j]/500)
-			#~ ct[i][j]["tps"]=(ct[i][j]*(10/500))
-			
-	#~ print(ct)
-			
+
 	
 	
 	

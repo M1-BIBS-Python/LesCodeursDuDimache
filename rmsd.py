@@ -94,7 +94,7 @@ def res_rmsd(a,b,liste=['CA']): #Atome par défaut CA
 def drawRMDS(dic,lType='-',title="A Graph Has No Name."):
 	listCle =list()
 	listVal =list()
-	for a in dic.keys():
+	for a in sorted(dic.keys()):
 		listCle.append(a)
 		listVal.append(dic[a])
 	
