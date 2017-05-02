@@ -320,8 +320,7 @@ def contact_residu(a,b):
 ## Renvoie un dictionnaire contenant les résidus en contacts 
 # @a: dictionnaire d'une proteirn avec les cdm
 # @b : dictionnaire d'une proteine avec les cdm
-def contact(a,b):
-	contact={}
+def contact(a,b,ct):
 	# PARCOURT DICT a
 	for mod in a.keys(): # model
 		for dom in a[mod].keys(): # domaine
@@ -334,14 +333,14 @@ def contact(a,b):
 								for res2 in b[mod2][dom2][chain2].keys(): # residu 
 									path1= "1"+str(dom)+str(chain)+str(res)
 									path2="2"+str(dom2)+str(chain2)+str(res2)
-									c=contact_residu(b[mod2][dom2][chain2][res2], a[mod][dom][chain][res])
-									if(c==1 and path1 not in contact.keys() ):
-										contact[path1]={}	
-									if(c==1 and path2 not in contact[path1].keys()):
-										contact[path1][path2]=0
-									if(c==1 and path2 in contact[path1].keys()):
-										contact[path1][path2]+=1
-	return(contact)
+									c=ct_residu(b[mod2][dom2][chain2][res2], a[mod][dom][chain][res])
+									if(c==1 and path1 not in ct.keys() ):
+										ct[path1]={}	
+									if(c==1 and path2 not in ct[path1].keys()):
+										ct[path1][path2]=1
+									if(c==1 and path2 in ct[path1].keys()):
+										ct[path1][path2]+=1
+	return(ct)
 
 
 if __name__ == '__main__':
@@ -388,13 +387,14 @@ if __name__ == '__main__':
 	print(4)
 	l=lecture_dossier(prot,"A*")
 	print(l)
-		for i in l :
+	ct=dict()
+	for i in l :
 		prot1=i				
 		print (i)
 		dicoProt1= lirePDB(prot1)
 		dicoProt1=cdm(dicoProt1)
-		
-		ct=contact(dicoProt1,dicoProt2)
-		print(ct)	
+		contact(dicoProt1,dicoProt2,ct)
+	
+	print(ct)	
 		
 		
